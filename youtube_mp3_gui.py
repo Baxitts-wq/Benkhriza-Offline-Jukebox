@@ -185,10 +185,14 @@ class YoutubeMp3App:
         self.start_button.grid(row=14, column=0, columnspan=2, sticky="ew")
         ttk.Button(panel, text="Open output", command=self.open_output_folder).grid(row=14, column=2, sticky="ew", padx=(8, 0))
 
-        ttk.Button(panel, text="Clear log", command=self.clear_log).grid(row=15, column=2, sticky="ew", padx=(8, 0), pady=(12, 0))
+        ttk.Button(panel, text="Clear log", command=self.clear_log).grid(row=16, column=2, sticky="ew", padx=(8, 0), pady=(12, 0))
+
+        # Logs area in an internal frame so we can attach a scrollbar without changing panel layout
+        logs_frame = ttk.Frame(panel)
+        logs_frame.grid(row=15, column=0, columnspan=3, sticky="nsew", pady=(12, 0))
 
         self.logs = tk.Text(
-            panel,
+            logs_frame,
             height=10,
             wrap="word",
             bg=self.colors["green"],
@@ -199,7 +203,28 @@ class YoutubeMp3App:
             pady=8,
             font=("Consolas", 10),
         )
-        self.logs.grid(row=15, column=0, columnspan=3, sticky="nsew", pady=(12, 0))
+        self.logs.grid(row=0, column=0, sticky="nsew")
+
+        logs_scroll = ttk.Scrollbar(logs_frame, orient="vertical", command=self.logs.yview)
+        logs_scroll.grid(row=0, column=1, sticky="ns")
+        self.logs.configure(yscrollcommand=logs_scroll.set)
+
+        # Mouse-wheel scrolling bindings (Windows and X11)
+        def _on_mousewheel(event):
+            try:
+                self.logs.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            except Exception:
+                pass
+
+        def _on_button4_5(event):
+            if event.num == 4:
+                self.logs.yview_scroll(-1, "units")
+            elif event.num == 5:
+                self.logs.yview_scroll(1, "units")
+
+        self.logs.bind_all("<MouseWheel>", _on_mousewheel)
+        self.logs.bind_all("<Button-4>", _on_button4_5)
+        self.logs.bind_all("<Button-5>", _on_button4_5)
 
         panel.columnconfigure(0, weight=1)
         panel.columnconfigure(1, weight=1)
@@ -211,6 +236,8 @@ class YoutubeMp3App:
     def _load_logo(self) -> None:
         # Try multiple possible logo files (explicit names first, PNG preferred, ICO fallback).
         candidates = [
+            # allow a user-provided replacement logo in the downloads folder to override built-in assets
+            Path.cwd() / "downloads" / "replace_Nero_AI_Image_Upscaler_Standard_Face-removebg-preview.png",
             "assets/app_icon.png",
             "assets/app_icon.ico",
             "assets/inapp_logo.png",
