@@ -46,3 +46,12 @@ The release spec does not include cookie files, downloads, or local environment 
 Do not publish `cookies.txt` or any `*_cookies.txt` file. Cookies are login/session data. The app supports browser-cookie loading so each user can use their own local browser session without searching for a cookies file or exposing someone else's account.
 
 Use this app only for content you own, have permission to download, or are otherwise allowed to save offline.
+
+## Replacing logos
+
+To replace the app icon and in-app logo, place image files in the `assets/` folder with these names:
+
+- `assets/app_icon.ico` or `assets/app_icon.png` — used for the window icon when possible.
+- `assets/inapp_logo.png` or `assets/inapp_logo.ico` — used for the header/stage images inside the app.
+
+The GUI will also fall back to `assets/Mr_Benkhriza_Logo.png` / `.ico` or `assets/logo.png` / `.ico`.
