@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Local configuration
+.env
+*.local.env
+
+# Private browser/session cookies. Never publish these.
+cookies.txt
+*_cookies.txt
+startpageshared_cookies.txt
+www.youtube.com_cookies.txt
+
+# Downloaded media and generated builds
+downloads/
+build/
+dist/
+*.log
+
+# Editor/OS noise
+.cursor/
+.DS_Store
+Thumbs.db

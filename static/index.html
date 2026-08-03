@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mr. Benkriza Offline Jukebox</title>
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    * { margin: 0; }
+
+    :root {
+      --ink: #241b16;
+      --paper: #f0e4c8;
+      --paper-light: #fff9e8;
+      --green: #274b3a;
+      --green-deep: #162c24;
+      --oxblood: #8d3026;
+      --brass: #b7852d;
+      --brass-light: #d5bd76;
+      --blue: #385970;
+      --line: #7a633f;
+      --muted: #6f5b3d;
+      --cream: #fff4da;
+      --shadow: 0 14px 36px rgba(36, 27, 22, 0.18);
+    }
+
+    body {
+      min-height: 100vh;
+      background:
+        linear-gradient(90deg, rgba(39, 75, 58, 0.08) 1px, transparent 1px),
+        linear-gradient(rgba(39, 75, 58, 0.06) 1px, transparent 1px),
+        var(--paper);
+      background-size: 24px 24px;
+      color: var(--ink);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      padding: 18px;
+    }
+
+    button, input, select { font: inherit; }
+
+    .shell {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      min-height: calc(100vh - 36px);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 16px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: var(--green-deep);
+      color: var(--cream);
+      border: 2px solid var(--ink);
+      box-shadow: 5px 5px 0 var(--ink);
+      padding: 14px 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border: 2px solid var(--brass-light);
+      background: var(--oxblood);
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      font-family: "Courier Prime", monospace;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .brand h1 {
+      font-family: "Courier Prime", monospace;
+      font-size: clamp(1.05rem, 2.3vw, 1.6rem);
+      letter-spacing: 0;
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+
+    .brand p {
+      color: #dbc99b;
+      font-size: 0.84rem;
+      margin-top: 3px;
+    }
+
+    .status-pill {
+      border: 1px solid var(--brass-light);
+      background: rgba(181, 133, 45, 0.18);
+      color: var(--cream);
+      padding: 8px 10px;
+      font-family: "Courier Prime", monospace;
+      font-size: 0.82rem;
+      white-space: nowrap;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .deck, .history {
+      background: var(--paper-light);
+      border: 2px solid var(--ink);
+      box-shadow: var(--shadow);
+    }
+
+    .deck-head, .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 2px solid var(--ink);
+      background: var(--brass-light);
+      font-family: "Courier Prime", monospace;
+      font-weight: 700;
+    }
+
+    .deck-head span, .panel-head span {
+      overflow-wrap: anywhere;
+    }
+
+    .screws {
+      display: flex;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
+    .screw {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--line);
+      border-radius: 50%;
+      background: var(--paper);
+      position: relative;
+    }
+
+    .screw::after {
+      content: "";
+      position: absolute;
+      left: 2px;
+      right: 2px;
+      top: 5px;
+      border-top: 2px solid var(--line);
+      transform: rotate(-25deg);
+    }
+
+    .deck-body {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 18px;
+      padding: 18px;
+    }
+
+    .cassette {
+      background: var(--green);
+      border: 2px solid var(--ink);
+      min-height: 245px;
+      padding: 16px;
+      color: var(--cream);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 16px;
+    }
+
+    .cassette-label {
+      background: var(--cream);
+      color: var(--ink);
+      border: 2px solid var(--ink);
+      padding: 9px;
+      font-family: "Courier Prime", monospace;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .reels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .reel {
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 7px solid var(--brass-light);
+      background:
+        radial-gradient(circle, var(--ink) 0 12%, transparent 13%),
+        repeating-conic-gradient(from 0deg, #fff4da 0deg 18deg, #8d3026 19deg 36deg);
+      box-shadow: inset 0 0 0 7px var(--green-deep);
+    }
+
+    .meter {
+      height: 16px;
+      border: 2px solid var(--ink);
+      background: var(--cream);
+      overflow: hidden;
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 18%;
+      background: linear-gradient(90deg, var(--green), var(--brass), var(--oxblood));
+      transition: width 0.25s ease;
+    }
+
+    .controls {
+      display: grid;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .field.wide { grid-column: 1 / -1; }
+
+    label, .label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    input[type="url"], input[type="text"], input[type="file"], select {
+      width: 100%;
+      min-height: 42px;
+      border: 2px solid var(--line);
+      background: #fffdf5;
+      color: var(--ink);
+      padding: 9px 10px;
+      outline: none;
+      border-radius: 0;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--oxblood);
+      box-shadow: 0 0 0 3px rgba(141, 48, 38, 0.16);
+    }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+    }
+
+    .toggle-group {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .toggle-btn, .small-btn, .download-btn {
+      border: 2px solid var(--ink);
+      border-radius: 0;
+      cursor: pointer;
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--ink);
+      background: #e7d5a4;
+      box-shadow: 3px 3px 0 var(--ink);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.16s ease;
+      font-weight: 700;
+    }
+
+    .toggle-btn:hover, .small-btn:hover, .download-btn:hover:not(:disabled) {
+      transform: translate(1px, 1px);
+      box-shadow: 2px 2px 0 var(--ink);
+    }
+
+    .toggle-btn.active {
+      background: var(--blue);
+      color: var(--cream);
+    }
+
+    .download-btn {
+      width: 100%;
+      min-height: 52px;
+      background: var(--oxblood);
+      color: var(--cream);
+      font-family: "Courier Prime", monospace;
+      font-size: 1rem;
+      letter-spacing: 0;
+    }
+
+    .download-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.66;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .check-row {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 2px solid var(--line);
+      padding: 9px 10px;
+      background: #fffdf5;
+      cursor: pointer;
+    }
+
+    .check-row input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--oxblood);
+      flex: 0 0 auto;
+    }
+
+    .progress-wrap {
+      display: none;
+      gap: 8px;
+    }
+
+    .progress-wrap.visible {
+      display: grid;
+    }
+
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--green-deep);
+      font-family: "Courier Prime", monospace;
+      font-size: 0.88rem;
+    }
+
+    .progress-info span:first-child {
+      overflow-wrap: anywhere;
+    }
+
+    .progress-track {
+      height: 14px;
+      border: 2px solid var(--ink);
+      background: #d9c79b;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--green), var(--brass), var(--oxblood));
+      transition: width 0.25s ease;
+    }
+
+    .history-body {
+      padding: 14px;
+    }
+
+    .history-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .history-item {
+      border: 2px solid var(--line);
+      background: #fffdf5;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .history-icon {
+      width: 34px;
+      height: 34px;
+      border: 2px solid var(--ink);
+      background: var(--green);
+      color: var(--cream);
+      display: grid;
+      place-items: center;
+      font-family: "Courier Prime", monospace;
+      font-weight: 700;
+      font-size: 0.75rem;
+    }
+
+    .history-name {
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .history-detail {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      overflow-wrap: anywhere;
+    }
+
+    .history-badge {
+      background: var(--brass-light);
+      border: 1px solid var(--line);
+      padding: 4px 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .empty-history {
+      border: 2px dashed var(--line);
+      color: var(--muted);
+      padding: 18px;
+      text-align: center;
+      background: #fffdf5;
+    }
+
+    footer {
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translate(-50%, 80px);
+      opacity: 0;
+      background: var(--green-deep);
+      color: var(--cream);
+      border: 2px solid var(--ink);
+      box-shadow: 4px 4px 0 var(--ink);
+      padding: 11px 16px;
+      max-width: min(520px, calc(100vw - 28px));
+      text-align: center;
+      transition: transform 0.22s ease, opacity 0.22s ease;
+      z-index: 20;
+      overflow-wrap: anywhere;
+    }
+
+    .toast.show {
+      transform: translate(-50%, 0);
+      opacity: 1;
+    }
+
+    @media (max-width: 900px) {
+      .workspace { grid-template-columns: 1fr; }
+      .history { order: 2; }
+    }
+
+    @media (max-width: 680px) {
+      body { padding: 10px; }
+      .shell { min-height: calc(100vh - 20px); }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .status-pill { white-space: normal; }
+      .deck-body { grid-template-columns: 1fr; padding: 12px; }
+      .cassette { min-height: 210px; }
+      .field-grid { grid-template-columns: 1fr; }
+      .input-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">MB</div>
+        <div>
+          <h1>Mr. Benkriza Offline Jukebox</h1>
+          <p>Playlist deck for long offline collections</p>
+        </div>
+      </div>
+      <div class="status-pill">YT-DLP DECK 600</div>
+    </header>
+
+    <main class="workspace">
+      <section class="deck">
+        <div class="deck-head">
+          <span>CONTROL PANEL</span>
+          <div class="screws" aria-hidden="true"><span class="screw"></span><span class="screw"></span></div>
+        </div>
+
+        <div class="deck-body">
+          <aside class="cassette" aria-label="Vintage cassette meter">
+            <div class="cassette-label">BENKRIZA TAPE</div>
+            <div class="reels" aria-hidden="true"><div class="reel"></div><div class="reel"></div></div>
+            <div class="meter"><div class="meter-fill" id="meterFill"></div></div>
+          </aside>
+
+          <div class="controls">
+            <div class="field wide">
+              <label for="urlInput">YouTube URL</label>
+              <div class="input-row">
+                <input id="urlInput" type="url" placeholder="https://www.youtube.com/playlist?list=..." />
+                <button type="button" class="small-btn" onclick="pasteFromClipboard()" title="Paste link">
+                  <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1H9V5z" />
+                  </svg>
+                  Paste
+                </button>
+              </div>
+            </div>
+
+            <div class="field-grid">
+              <div class="field">
+                <label for="formatSelect">Format</label>
+                <div class="toggle-group" role="group" aria-label="Format">
+                  <button type="button" class="toggle-btn active" id="btn-mp3" onclick="setFormat('mp3')">MP3</button>
+                  <button type="button" class="toggle-btn" id="btn-mp4" onclick="setFormat('mp4')">MP4</button>
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="qualitySelect">Quality</label>
+                <select id="qualitySelect">
+                  <option value="best">Best Available</option>
+                  <option value="128">128 kbps</option>
+                  <option value="192" selected>192 kbps</option>
+                  <option value="320">320 kbps HQ</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <span class="label">Mode</span>
+                <label class="check-row">
+                  <input type="checkbox" id="playlistMode" checked />
+                  <span>Full playlist</span>
+                </label>
+              </div>
+
+              <div class="field">
+                <label for="browserCookies">Browser cookies</label>
+                <select id="browserCookies">
+                  <option value="">None</option>
+                  <option value="edge">Microsoft Edge</option>
+                  <option value="chrome">Chrome</option>
+                  <option value="firefox">Firefox</option>
+                  <option value="brave">Brave</option>
+                  <option value="opera">Opera</option>
+                  <option value="vivaldi">Vivaldi</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="outputDir">Output folder</label>
+                <input type="text" id="outputDir" placeholder="blank = downloads root" />
+              </div>
+
+              <div class="field">
+                <label for="cookiesFile">Cookies file</label>
+                <input type="file" id="cookiesFile" accept=".txt" />
+              </div>
+            </div>
+
+            <div class="progress-wrap" id="progressWrap">
+              <div class="progress-info">
+                <span id="progressLabel">Preparing...</span>
+                <span id="progressPct">0%</span>
+              </div>
+              <div class="progress-track"><div class="progress-fill" id="progressBar"></div></div>
+            </div>
+
+            <button type="button" class="download-btn" id="downloadBtn" onclick="startDownload()">
+              <svg width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 12l4 4 4-4M12 4v12" />
+              </svg>
+              Start Download
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="history">
+        <div class="panel-head">
+          <span>RECENT TAPES</span>
+          <div class="screws" aria-hidden="true"><span class="screw"></span></div>
+        </div>
+        <div class="history-body">
+          <div class="history-list" id="historyList">
+            <div class="empty-history">No downloads yet.</div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <footer>Built for Mr. Benkriza - local downloads stay on this machine.</footer>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    function apiUrl(path) {
+      const base = (typeof window !== 'undefined' && window.API_BASE) ? String(window.API_BASE).replace(/\/$/, '') : '';
+      const p = path.startsWith('/') ? path : '/' + path;
+      return base + p;
+    }
+
+    let format = 'mp3';
+    let history = [];
+    let pollTimer = null;
+
+    function setFormat(nextFormat) {
+      format = nextFormat;
+      document.getElementById('btn-mp3').classList.toggle('active', nextFormat === 'mp3');
+      document.getElementById('btn-mp4').classList.toggle('active', nextFormat === 'mp4');
+
+      const sel = document.getElementById('qualitySelect');
+      if (nextFormat === 'mp3') {
+        sel.innerHTML = [
+          '<option value="best">Best Available</option>',
+          '<option value="128">128 kbps</option>',
+          '<option value="192" selected>192 kbps</option>',
+          '<option value="320">320 kbps HQ</option>'
+        ].join('');
+      } else {
+        sel.innerHTML = [
+          '<option value="best">Best Available</option>',
+          '<option value="1080">1080p Full HD</option>',
+          '<option value="720">720p HD</option>',
+          '<option value="480">480p</option>',
+          '<option value="360">360p</option>'
+        ].join('');
+      }
+    }
+
+    async function pasteFromClipboard() {
+      try {
+        const text = await navigator.clipboard.readText();
+        document.getElementById('urlInput').value = text;
+        showToast('Link pasted');
+      } catch {
+        document.getElementById('urlInput').focus();
+      }
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3200);
+    }
+
+    function setProgress(percent, message) {
+      const p = Math.max(0, Math.min(100, Number(percent) || 0));
+      document.getElementById('progressBar').style.width = p + '%';
+      document.getElementById('meterFill').style.width = Math.max(18, p) + '%';
+      document.getElementById('progressPct').textContent = Math.round(p) + '%';
+      document.getElementById('progressLabel').textContent = message || 'Working...';
+    }
+
+    async function startDownload() {
+      const url = document.getElementById('urlInput').value.trim();
+      if (!url) { showToast('Paste a YouTube URL first'); return; }
+      if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
+        showToast('Only YouTube links are supported');
+        return;
+      }
+
+      const btn = document.getElementById('downloadBtn');
+      const wrap = document.getElementById('progressWrap');
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+
+      const formData = new FormData();
+      formData.append('url', url);
+      formData.append('format', format);
+      formData.append('quality', document.getElementById('qualitySelect').value);
+      formData.append('playlist', document.getElementById('playlistMode').checked ? 'true' : 'false');
+      formData.append('output_dir', document.getElementById('outputDir').value.trim());
+      const browser = document.getElementById('browserCookies').value;
+      if (browser) formData.append('browser_cookies', browser);
+      const cf = document.getElementById('cookiesFile').files[0];
+      if (cf) formData.append('cookies', cf);
+
+      btn.disabled = true;
+      wrap.classList.add('visible');
+      setProgress(0, 'Starting...');
+
+      try {
+        const res = await fetch(apiUrl('/api/download'), { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          showToast(data.error || 'Server error');
+          wrap.classList.remove('visible');
+          btn.disabled = false;
+          return;
+        }
+
+        const jobId = data.job_id;
+        pollTimer = setInterval(async () => {
+          try {
+            const jr = await fetch(apiUrl('/api/job/' + jobId));
+            if (!jr.ok) {
+              clearInterval(pollTimer);
+              pollTimer = null;
+              btn.disabled = false;
+              wrap.classList.remove('visible');
+              showToast('Job not found');
+              return;
+            }
+
+            const st = await jr.json();
+            setProgress(st.percent, st.message);
+            if (st.done) {
+              clearInterval(pollTimer);
+              pollTimer = null;
+              btn.disabled = false;
+              if (st.success) {
+                const count = typeof st.downloaded_count === 'number' ? st.downloaded_count : null;
+                const total = typeof st.total_items === 'number' ? st.total_items : null;
+                showToast(total ? `Finished ${count}/${total} new downloads` : 'Finished');
+                addHistory(url, format, document.getElementById('qualitySelect').value, st.output_folder, count, total);
+                setTimeout(() => { wrap.classList.remove('visible'); setProgress(0, 'Ready'); }, 2600);
+              } else {
+                showToast(st.error || 'Failed');
+                wrap.classList.remove('visible');
+              }
+            }
+          } catch {
+            clearInterval(pollTimer);
+            pollTimer = null;
+            btn.disabled = false;
+            wrap.classList.remove('visible');
+            showToast('Connection error');
+          }
+        }, 500);
+      } catch {
+        btn.disabled = false;
+        wrap.classList.remove('visible');
+        showToast('Could not reach server. Run: python web_app.py');
+      }
+    }
+
+    function addHistory(url, fmt, quality, folderHint, count, total) {
+      const name = url.split('list=')[1]?.slice(0, 16) || url.split('v=')[1]?.slice(0, 11) || url.split('/').pop()?.slice(0, 18) || 'youtube';
+      history.unshift({
+        name: `YouTube ${name}`,
+        fmt,
+        quality,
+        folder: folderHint || '',
+        count,
+        total,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+      if (history.length > 6) history.pop();
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const list = document.getElementById('historyList');
+      if (!history.length) {
+        list.innerHTML = '<div class="empty-history">No downloads yet.</div>';
+        return;
+      }
+
+      list.innerHTML = history.map(h => {
+        const progress = h.total ? `${h.count}/${h.total}` : 'done';
+        const folder = h.folder ? ` - ${escapeHtml(h.folder.split(/[/\\\\]/).pop() || '')}` : '';
+        return `
+          <div class="history-item">
+            <div class="history-icon">${h.fmt.toUpperCase()}</div>
+            <div>
+              <div class="history-name">${escapeHtml(h.name)}</div>
+              <div class="history-detail">${escapeHtml(String(h.quality))} - ${progress}${folder} - ${h.time}</div>
+            </div>
+            <span class="history-badge">${h.fmt.toUpperCase()}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+  </script>
+</body>
+</html>

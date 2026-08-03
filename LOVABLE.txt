@@ -1,0 +1,42 @@
+Lovable + API split architecture
+================================
+
+The UI can be hosted by Lovable, but downloads need a Python API server with
+yt-dlp and ffmpeg. This repo provides that API.
+
+1) Deploy the API
+   - Use a VPS, Railway, Render, Fly.io, or another Python host.
+   - Install Python 3.11+, ffmpeg, and this repo.
+   - Run: pip install -r requirements.txt
+   - Set environment variables from config.example.env:
+       CORS_ORIGINS=https://your-project.lovable.app,https://www.yourdomain.com
+       FLASK_HOST=0.0.0.0
+       DOWNLOAD_ROOT=downloads
+       MAX_UPLOAD_MB=8
+   - Production command:
+       gunicorn -w 1 --threads 4 -b 0.0.0.0:$PORT web_app:app
+   - Health check:
+       GET https://your-api-host/api/health
+
+2) Point Lovable at the API
+   - Before the UI script loads, set:
+       window.API_BASE = 'https://api.yourdomain.com';
+   - Keep no trailing slash.
+   - The frontend calls:
+       POST /api/download
+       GET  /api/job/:id
+
+3) DNS
+   - Point www/apex to Lovable.
+   - Point api.yourdomain.com to the Python API host.
+   - Add the Lovable URL to CORS_ORIGINS.
+
+4) Safety before public launch
+   - Do not ship or upload cookies.txt or *_cookies.txt.
+   - Keep DOWNLOAD_ROOT pointed at a folder dedicated to downloads.
+   - Add authentication and rate limiting before opening the API to strangers.
+   - Review YouTube Terms of Service and local law for your use case.
+
+5) Local testing
+   - Run: python web_app.py
+   - Open: http://127.0.0.1:5000
