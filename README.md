@@ -1,0 +1,1 @@
+# Mr. Benkriza Offline Jukebox\n\nThis branch contains the final Windows executable release only.\n\n## Download\n- dist/MrBenkrizaDownloader.exe\n\nRun the executable directly on Windows.\n\n## Notes\n- The full source is kept on the main branch.\n- This branch is intended for end-users who only need the final product.
