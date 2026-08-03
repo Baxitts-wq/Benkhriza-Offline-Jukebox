@@ -21,17 +21,4 @@ jobs:
           if [ -f requirements.txt ]; then python -m pip install -r requirements.txt; fi
       - name: Compile all Python files
         run: |
-          python - <<'PY'
-import py_compile, glob, sys
-files = [f for f in glob.glob('**/*.py', recursive=True) if not f.startswith('.git')]
-ok = True
-for f in files:
-    try:
-        py_compile.compile(f, doraise=True)
-    except Exception as e:
-        print(f'Compile failed: {f}: {e}', file=sys.stderr)
-        ok = False
-if not ok:
-    sys.exit(2)
-print('All files compiled successfully')
-PY
+          python -m compileall -q -x 'build|dist|\.git' .
