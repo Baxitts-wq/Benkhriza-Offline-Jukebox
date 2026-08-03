@@ -52,6 +52,8 @@ class YoutubeMp3App:
         self.logo_photo = None
         self.logo_stage_photo = None
         self.logo_icon = None
+        self.music_proc = None
+        self.music_var = tk.StringVar()
 
         self._configure_style()
         self._build_ui()
@@ -118,6 +120,19 @@ class YoutubeMp3App:
         ttk.Label(header, text="BENKHRIZA OFFICIAL", style="Badge.TLabel").grid(row=0, column=2, rowspan=2, sticky="e")
         header.columnconfigure(1, weight=1)
 
+        # Ambient music controls (reads songs from the external example folder; does not modify it)
+        try:
+            music_folder = Path(r"C:\Users\Imad Eddin\Desktop\TestMrbenhriza\Mr_Benkhriza_v2\Songs")
+            music_files = [p.name for p in music_folder.iterdir() if p.suffix.lower() in ('.mp3', '.wav', '.ogg')] if music_folder.exists() else []
+        except Exception:
+            music_files = []
+        music_frame = ttk.Frame(header)
+        music_frame.grid(row=2, column=1, sticky="e")
+        ttk.Label(music_frame, text="Ambient:", style="Subtitle.TLabel").pack(side="left", padx=(0, 8))
+        self.music_box = ttk.Combobox(music_frame, textvariable=self.music_var, values=music_files, state="readonly", width=28)
+        self.music_box.pack(side="left")
+        ttk.Button(music_frame, text="Play/Pause", command=self.toggle_music).pack(side="left", padx=(8, 0))
+
         panel = ttk.Frame(frame, style="Panel.TFrame", padding=16)
         panel.grid(row=1, column=0, columnspan=3, sticky="nsew")
 
@@ -127,7 +142,9 @@ class YoutubeMp3App:
         self.logo_stage_label.grid(row=0, column=0, sticky="ew")
 
         ttk.Label(panel, text="YouTube URL(s)", style="Panel.TLabel").grid(row=1, column=0, sticky="w")
-        ttk.Entry(panel, textvariable=self.url_var).grid(row=2, column=0, columnspan=3, sticky="ew", pady=(4, 12))
+        # multi-line input for multiple URLs
+        self.url_text = tk.Text(panel, height=4, wrap="word", bg="#fffdf5", fg=self.colors["ink"], font=("Segoe UI", 10))
+        self.url_text.grid(row=2, column=0, columnspan=3, sticky="ew", pady=(4, 12))
         ttk.Label(panel, text="Enter one URL per line or separate with commas.", style="Hint.TLabel").grid(row=3, column=0, columnspan=3, sticky="w", pady=(0, 12))
 
         ttk.Label(panel, text="Output folder", style="Panel.TLabel").grid(row=4, column=0, sticky="w")
@@ -307,6 +324,49 @@ class YoutubeMp3App:
         if file_path:
             self.cookies_var.set(file_path)
 
+    def toggle_music(self) -> None:
+        """Play or stop the selected ambient track. Uses ffplay when available, falls back to opening the file."""
+        track = self.music_var.get().strip()
+        if not track:
+            self.log("No ambient track selected.")
+            return
+        # locate the file in the example songs folder without modifying it
+        music_path = Path(r"C:\Users\Imad Eddin\Desktop\TestMrbenhriza\Mr_Benkhriza_v2\Songs") / track
+        if not music_path.exists():
+            self.log(f"Ambient file not found: {music_path}")
+            return
+
+        # If already playing, stop it
+        if getattr(self, "music_proc", None) is not None:
+            try:
+                proc = self.music_proc
+                if proc and proc.poll() is None:
+                    proc.terminate()
+                    self.music_proc = None
+                    self.log("Ambient audio stopped.")
+                    return
+            except Exception:
+                self.music_proc = None
+
+        # Try to play with ffplay (part of ffmpeg), otherwise open with default app
+        if shutil.which("ffplay"):
+            try:
+                # launch ffplay quietly
+                self.music_proc = subprocess.Popen(["ffplay", "-nodisp", "-autoexit", "-loglevel", "quiet", str(music_path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                self.log(f"Playing ambient: {track}")
+            except Exception as e:
+                self.log(f"Failed to play ambient with ffplay: {e}")
+                try:
+                    os.startfile(str(music_path))
+                except Exception:
+                    self.log("Unable to open ambient file.")
+        else:
+            try:
+                os.startfile(str(music_path))
+                self.log(f"Opened ambient file with default player: {track}")
+            except Exception:
+                self.log("Unable to open ambient file; install ffplay for built-in playback control.")
+
     def open_output_folder(self) -> None:
         folder = self.output_var.get().strip()
         if folder and Path(folder).exists():
@@ -328,7 +388,7 @@ class YoutubeMp3App:
         self.logs.see("end")
 
     def start_download(self) -> None:
-        raw_text = self.url_var.get().strip()
+        raw_text = self.url_text.get("1.0", "end").strip()
         output_folder = self.output_var.get().strip()
 
         urls = [part.strip() for part in raw_text.replace(",", "\n").splitlines() if part.strip()]
