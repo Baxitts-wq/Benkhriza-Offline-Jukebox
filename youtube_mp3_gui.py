@@ -54,7 +54,25 @@ class YoutubeMp3App:
         self._configure_style()
         self._build_ui()
         self._load_logo()
+        self._discover_cookies()
         self.root.after(100, self.process_events)
+
+    def _discover_cookies(self) -> None:
+        # Look for common cookie filenames in the current working directory and prefill the cookies field.
+        candidates = [
+            Path.cwd() / "cookies.txt",
+            Path.cwd() / "www.youtube.com_cookies.txt",
+            Path.cwd() / "startpageshared_cookies.txt",
+            Path.cwd() / "cookies" / "cookies.txt",
+        ]
+        for p in candidates:
+            try:
+                if p.exists() and p.is_file():
+                    self.cookies_var.set(str(p))
+                    self.log(f"Using local cookies file: {p}")
+                    return
+            except Exception:
+                continue
 
     def _configure_style(self) -> None:
         self.root.configure(bg=self.colors["paper"])
@@ -185,8 +203,17 @@ class YoutubeMp3App:
         frame.rowconfigure(1, weight=1)
 
     def _load_logo(self) -> None:
-        # Try multiple possible logo files (PNG preferred, ICO fallback).
-        candidates = ["assets/Mr_Benkhriza_Logo.png", "assets/Mr_Benkhriza_Logo.ico", "assets/logo.png", "assets/logo.ico"]
+        # Try multiple possible logo files (explicit names first, PNG preferred, ICO fallback).
+        candidates = [
+            "assets/app_icon.png",
+            "assets/app_icon.ico",
+            "assets/inapp_logo.png",
+            "assets/inapp_logo.ico",
+            "assets/Mr_Benkhriza_Logo.png",
+            "assets/Mr_Benkhriza_Logo.ico",
+            "assets/logo.png",
+            "assets/logo.ico",
+        ]
         img = None
         for rel in candidates:
             logo_path = resource_path(rel)
