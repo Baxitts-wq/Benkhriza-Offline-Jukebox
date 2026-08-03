@@ -1,5 +1,7 @@
+import os
 import queue
 import shutil
+import subprocess
 import threading
 import sys
 import tkinter as tk
@@ -124,14 +126,15 @@ class YoutubeMp3App:
         self.logo_stage_label = ttk.Label(logo_stage, style="Panel.TLabel")
         self.logo_stage_label.grid(row=0, column=0, sticky="ew")
 
-        ttk.Label(panel, text="YouTube URL", style="Panel.TLabel").grid(row=1, column=0, sticky="w")
+        ttk.Label(panel, text="YouTube URL(s)", style="Panel.TLabel").grid(row=1, column=0, sticky="w")
         ttk.Entry(panel, textvariable=self.url_var).grid(row=2, column=0, columnspan=3, sticky="ew", pady=(4, 12))
+        ttk.Label(panel, text="Enter one URL per line or separate with commas.", style="Hint.TLabel").grid(row=3, column=0, columnspan=3, sticky="w", pady=(0, 12))
 
-        ttk.Label(panel, text="Output folder", style="Panel.TLabel").grid(row=3, column=0, sticky="w")
-        ttk.Entry(panel, textvariable=self.output_var).grid(row=4, column=0, columnspan=2, sticky="ew", pady=(4, 12))
-        ttk.Button(panel, text="Browse", command=self.pick_output).grid(row=4, column=2, sticky="ew", padx=(8, 0))
+        ttk.Label(panel, text="Output folder", style="Panel.TLabel").grid(row=4, column=0, sticky="w")
+        ttk.Entry(panel, textvariable=self.output_var).grid(row=5, column=0, columnspan=2, sticky="ew", pady=(4, 12))
+        ttk.Button(panel, text="Browse", command=self.pick_output).grid(row=5, column=2, sticky="ew", padx=(8, 0))
 
-        ttk.Label(panel, text="Cookie source", style="Panel.TLabel").grid(row=5, column=0, sticky="w")
+        ttk.Label(panel, text="Cookie source", style="Panel.TLabel").grid(row=6, column=0, sticky="w")
         browser_box = ttk.Combobox(
             panel,
             textvariable=self.browser_cookie_var,
@@ -179,7 +182,10 @@ class YoutubeMp3App:
         self.status_label.grid(row=13, column=0, columnspan=3, sticky="w", pady=(0, 10))
 
         self.start_button = ttk.Button(panel, text="Start the deck", command=self.start_download, style="Accent.TButton")
-        self.start_button.grid(row=14, column=0, columnspan=3, sticky="ew")
+        self.start_button.grid(row=14, column=0, columnspan=2, sticky="ew")
+        ttk.Button(panel, text="Open output", command=self.open_output_folder).grid(row=14, column=2, sticky="ew", padx=(8, 0))
+
+        ttk.Button(panel, text="Clear log", command=self.clear_log).grid(row=15, column=2, sticky="ew", padx=(8, 0), pady=(12, 0))
 
         self.logs = tk.Text(
             panel,
@@ -274,19 +280,36 @@ class YoutubeMp3App:
         if file_path:
             self.cookies_var.set(file_path)
 
+    def open_output_folder(self) -> None:
+        folder = self.output_var.get().strip()
+        if folder and Path(folder).exists():
+            try:
+                if sys.platform == "win32":
+                    os.startfile(folder)
+                elif sys.platform == "darwin":
+                    subprocess.run(["open", folder], check=False)
+                else:
+                    subprocess.run(["xdg-open", folder], check=False)
+            except Exception:
+                messagebox.showerror("Open folder", "Unable to open the output folder.")
+
+    def clear_log(self) -> None:
+        self.logs.delete("1.0", "end")
+
     def log(self, text: str) -> None:
         self.logs.insert("end", text + "\n")
         self.logs.see("end")
 
     def start_download(self) -> None:
-        url = self.url_var.get().strip()
+        raw_text = self.url_var.get().strip()
         output_folder = self.output_var.get().strip()
 
-        if not url:
-            messagebox.showerror("Missing URL", "Please provide a YouTube URL.")
+        urls = [part.strip() for part in raw_text.replace(",", "\n").splitlines() if part.strip()]
+        if not urls:
+            messagebox.showerror("Missing URL", "Please provide one or more YouTube URLs.")
             return
-        if not is_supported_youtube_url(url):
-            messagebox.showerror("Unsupported URL", "Please use a YouTube or youtu.be link.")
+        if any(not is_supported_youtube_url(url) for url in urls):
+            messagebox.showerror("Unsupported URL", "Please use valid YouTube or youtu.be links only.")
             return
         if not output_folder:
             messagebox.showerror("Missing output", "Please choose an output folder.")
@@ -298,16 +321,17 @@ class YoutubeMp3App:
             messagebox.showerror("Missing dependency", "ffmpeg was not found in PATH.")
             return
 
+        self.urls = urls
         self.start_button.config(state="disabled")
         self.progress["value"] = 0
         self.status_var.set("Preparing download...")
-        self.log("Starting new task...")
+        self.log(f"Starting download of {len(urls)} URL(s)...")
 
         worker = threading.Thread(target=self.download_worker, daemon=True)
         worker.start()
 
     def download_worker(self) -> None:
-        url = self.url_var.get().strip()
+        urls = getattr(self, "urls", [])
         quality = self.quality_var.get().strip()
         download_mode = self.download_mode_var.get().strip()
         output_root = Path(self.output_var.get().strip())
@@ -316,41 +340,46 @@ class YoutubeMp3App:
         media = self.media_var.get().strip()
         playlist = download_mode == "playlist"
 
-        def progress_cb(pct: float, msg: str) -> None:
-            self.events.put(("progress", pct))
-            self.events.put(("status", msg))
-
-        try:
-            subfolder = run_download(
-                url,
-                output_root,
-                media=media,
-                quality=quality,
-                playlist=playlist,
-                cookies_path=cookies,
-                browser_cookies=browser_cookies,
-                progress=progress_cb,
-            )
-            self.events.put(("progress", 100.0))
-            self.events.put(("status", "Done"))
-            if subfolder.total_items:
-                self.events.put(
-                    (
-                        "log",
-                        f"Finished. New downloads: {subfolder.downloaded_count}/{subfolder.total_items}. Output: {subfolder.output_folder}",
-                    )
-                )
-            else:
-                self.events.put(("log", f"Finished. Output: {subfolder.output_folder}"))
-            if subfolder.return_code:
-                self.events.put(("log", f"yt-dlp finished with warning code {subfolder.return_code}."))
-            if subfolder.error_count:
-                self.events.put(("log", f"yt-dlp reported {subfolder.error_count} error(s); unavailable/private videos may be skipped."))
-        except Exception as exc:
-            self.events.put(("status", "Failed"))
-            self.events.put(("log", f"Error: {exc}"))
-        finally:
+        if not urls:
+            self.events.put(("status", "No URLs to download."))
             self.events.put(("finish", ""))
+            return
+
+        for index, url in enumerate(urls, start=1):
+            self.events.put(("status", f"Downloading {index}/{len(urls)}"))
+            self.events.put(("log", f"Downloading: {url}"))
+
+            def progress_cb(pct: float, msg: str) -> None:
+                self.events.put(("progress", pct))
+                self.events.put(("status", f"[{index}/{len(urls)}] {msg}"))
+
+            try:
+                subfolder = run_download(
+                    url,
+                    output_root,
+                    media=media,
+                    quality=quality,
+                    playlist=playlist,
+                    cookies_path=cookies,
+                    browser_cookies=browser_cookies,
+                    progress=progress_cb,
+                )
+                self.events.put(("progress", 100.0))
+                self.events.put(("status", f"Done {index}/{len(urls)}"))
+                if subfolder.total_items:
+                    self.events.put(("log", f"Finished: {subfolder.downloaded_count}/{subfolder.total_items} new downloads in {subfolder.output_folder}"))
+                else:
+                    self.events.put(("log", f"Finished: output {subfolder.output_folder}"))
+                if subfolder.return_code:
+                    self.events.put(("log", f"yt-dlp finished with warning code {subfolder.return_code}."))
+                if subfolder.error_count:
+                    self.events.put(("log", f"yt-dlp reported {subfolder.error_count} error(s); unavailable/private videos may be skipped."))
+            except Exception as exc:
+                self.events.put(("status", f"Failed {index}/{len(urls)}"))
+                self.events.put(("log", f"Error: {exc}"))
+                break
+
+        self.events.put(("finish", ""))
 
     def process_events(self) -> None:
         while not self.events.empty():
