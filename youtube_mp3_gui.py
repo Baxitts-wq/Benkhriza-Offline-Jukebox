@@ -30,15 +30,15 @@ class YoutubeMp3App:
         self.root.minsize(780, 560)
         self.events: "queue.Queue[tuple[str, str | float]]" = queue.Queue()
         self.colors = {
-            "ink": "#2b2118",
-            "paper": "#f4ecd6",
-            "panel": "#fff8e8",
-            "line": "#8a6f45",
-            "brass": "#b8872f",
-            "red": "#8f2f24",
-            "green": "#284a3a",
-            "cream": "#fff4da",
-            "muted": "#6f5c3b",
+            "ink": "#00FF41",
+            "paper": "#000000",
+            "panel": "#07070B",
+            "line": "#222233",
+            "brass": "#FF9900",
+            "red": "#FF003C",
+            "green": "#00FF41",
+            "cream": "#FFFFFF",
+            "muted": "#555566",
         }
 
         self.url_var = tk.StringVar()
@@ -81,27 +81,44 @@ class YoutubeMp3App:
     def _configure_style(self) -> None:
         self.root.configure(bg=self.colors["paper"])
         style = ttk.Style()
-        style.theme_use("clam")
-        style.configure(".", font=("Segoe UI", 10), background=self.colors["paper"], foreground=self.colors["ink"])
+        try:
+            style.theme_use("clam")
+        except Exception:
+            pass
+        style.configure(".", font=("Consolas", 10), background=self.colors["paper"], foreground=self.colors["ink"])
         style.configure("TFrame", background=self.colors["paper"])
         style.configure("Panel.TFrame", background=self.colors["panel"], relief="solid", borderwidth=1)
         style.configure("Header.TFrame", background=self.colors["green"])
-        style.configure("Title.TLabel", background=self.colors["green"], foreground=self.colors["cream"], font=("Georgia", 22, "bold"))
-        style.configure("Subtitle.TLabel", background=self.colors["green"], foreground="#dbc99b", font=("Segoe UI", 10))
+        style.configure("Title.TLabel", background=self.colors["green"], foreground=self.colors["red"], font=("Consolas", 20, "bold"))
+        style.configure("Subtitle.TLabel", background=self.colors["green"], foreground=self.colors["muted"], font=("Consolas", 10))
         style.configure("Badge.TLabel", background=self.colors["red"], foreground=self.colors["cream"], font=("Segoe UI", 9, "bold"), padding=(8, 4))
-        style.configure("LogoFrame.TFrame", background=self.colors["green"])
+        style.configure("LogoFrame.TFrame", background=self.colors["panel"])
         style.configure("TLabel", background=self.colors["paper"], foreground=self.colors["ink"])
         style.configure("Panel.TLabel", background=self.colors["panel"], foreground=self.colors["ink"])
-        style.configure("Hint.TLabel", background=self.colors["panel"], foreground=self.colors["muted"], font=("Segoe UI", 9))
+        style.configure("Hint.TLabel", background=self.colors["panel"], foreground=self.colors["muted"], font=("Consolas", 9))
         style.configure("TEntry", fieldbackground="#fffdf5", foreground=self.colors["ink"], bordercolor=self.colors["line"], lightcolor=self.colors["brass"], darkcolor=self.colors["line"], padding=6)
         style.configure("TCombobox", fieldbackground="#fffdf5", foreground=self.colors["ink"], arrowcolor=self.colors["ink"], bordercolor=self.colors["line"], padding=4)
-        style.configure("TButton", background="#e7d7aa", foreground=self.colors["ink"], bordercolor=self.colors["line"], focusthickness=2, focuscolor=self.colors["brass"], padding=(10, 6))
-        style.map("TButton", background=[("active", "#d6bf7a")])
-        style.configure("Accent.TButton", background=self.colors["red"], foreground=self.colors["cream"], font=("Segoe UI", 11, "bold"), padding=(12, 9))
-        style.map("Accent.TButton", background=[("active", "#a74336"), ("disabled", "#b8988f")])
+        style.configure("TButton", background="#111111", foreground=self.colors["green"], bordercolor=self.colors["green"], focusthickness=2, focuscolor=self.colors["green"], padding=(10, 6))
+        style.configure("Hover.TButton", background="#002200", foreground=self.colors["green"], bordercolor=self.colors["green"], padding=(10, 6))
+        style.configure("Pressed.TButton", background="#001100", foreground=self.colors["green"], bordercolor=self.colors["green"], padding=(10, 6))
+        style.map("TButton", background=[("active", "#002200")])
+        style.configure("Accent.TButton", background=self.colors["red"], foreground=self.colors["cream"], font=("Consolas", 11, "bold"), padding=(12, 9), bordercolor=self.colors["red"])
+        style.configure("Accent.Hover.TButton", background="#66001e", foreground=self.colors["cream"], bordercolor=self.colors["red"], padding=(12, 9))
+        style.map("Accent.TButton", background=[("active", "#66001e"), ("disabled", "#333333")])
+        style.configure("Neon.TNotebook", background=self.colors["panel"], tabmargins=0)
+        style.configure("Neon.TNotebook.Tab", background=self.colors["panel"], foreground=self.colors["green"], padding=(12, 8), font=("Consolas", 10, "bold"))
+        style.map("Neon.TNotebook.Tab", background=[("selected", self.colors["line"]), ("active", "#002200")], foreground=[("selected", self.colors["cream"])])
         style.configure("TRadiobutton", background=self.colors["panel"], foreground=self.colors["ink"])
         style.map("TRadiobutton", background=[("active", self.colors["panel"])])
-        style.configure("Horizontal.TProgressbar", troughcolor="#d9c79b", background=self.colors["brass"], bordercolor=self.colors["line"], lightcolor=self.colors["brass"], darkcolor=self.colors["brass"])
+        style.configure("Horizontal.TProgressbar", troughcolor="#111111", background=self.colors["green"], bordercolor=self.colors["line"], lightcolor=self.colors["green"], darkcolor=self.colors["green"])
+        style.configure("NeonPanel.TFrame", background=self.colors["panel"], relief="solid", borderwidth=1)
+        style.configure("NeonLabel.TLabel", background=self.colors["panel"], foreground=self.colors["ink"], font=("Consolas", 10))
+
+    def _bind_neon_hover(self, widget: ttk.Button, base_style: str, hover_style: str, pressed_style: str) -> None:
+        widget.bind("<Enter>", lambda e: widget.configure(style=hover_style))
+        widget.bind("<Leave>", lambda e: widget.configure(style=base_style))
+        widget.bind("<ButtonPress-1>", lambda e: widget.configure(style=pressed_style))
+        widget.bind("<ButtonRelease-1>", lambda e: widget.configure(style=hover_style))
 
     def _build_ui(self) -> None:
         frame = ttk.Frame(self.root, padding=16)
@@ -138,83 +155,52 @@ class YoutubeMp3App:
 
         logo_stage = ttk.Frame(panel, style="Panel.TFrame")
         logo_stage.grid(row=0, column=0, columnspan=3, sticky="ew", pady=(0, 14))
-        self.logo_stage_label = ttk.Label(logo_stage, style="Panel.TLabel")
-        self.logo_stage_label.grid(row=0, column=0, sticky="ew")
+        # Canvas for circular emblem + pulsing neon ring
+        self.logo_canvas = tk.Canvas(logo_stage, width=180, height=180, highlightthickness=0, bg=self.colors["panel"])
+        self.logo_canvas.grid(row=0, column=0, sticky="w")
+        self._pulse_ring_id = None
+        self._pulse_state = 0
 
-        ttk.Label(panel, text="YouTube URL(s)", style="Panel.TLabel").grid(row=1, column=0, sticky="w")
-        # multi-line input for multiple URLs
-        self.url_text = tk.Text(panel, height=4, wrap="word", bg="#fffdf5", fg=self.colors["ink"], font=("Segoe UI", 10))
-        self.url_text.grid(row=2, column=0, columnspan=3, sticky="ew", pady=(4, 12))
-        ttk.Label(panel, text="Enter one URL per line or separate with commas.", style="Hint.TLabel").grid(row=3, column=0, columnspan=3, sticky="w", pady=(0, 12))
+        notebook = ttk.Notebook(panel, style="Neon.TNotebook")
+        notebook.grid(row=1, column=0, columnspan=3, sticky="nsew", pady=(0, 14))
 
-        ttk.Label(panel, text="Output folder", style="Panel.TLabel").grid(row=4, column=0, sticky="w")
-        ttk.Entry(panel, textvariable=self.output_var).grid(row=5, column=0, columnspan=2, sticky="ew", pady=(4, 12))
-        ttk.Button(panel, text="Browse", command=self.pick_output).grid(row=5, column=2, sticky="ew", padx=(8, 0))
+        deck_tab = ttk.Frame(notebook, style="NeonPanel.TFrame")
+        settings_tab = ttk.Frame(notebook, style="NeonPanel.TFrame")
+        notebook.add(deck_tab, text="Deck")
+        notebook.add(settings_tab, text="Settings")
 
-        ttk.Label(panel, text="Cookie source", style="Panel.TLabel").grid(row=6, column=0, sticky="w")
-        browser_box = ttk.Combobox(
-            panel,
-            textvariable=self.browser_cookie_var,
-            values=("none", "edge", "chrome", "firefox", "brave", "opera", "vivaldi"),
-            state="readonly",
-            width=14,
-        )
-        browser_box.grid(row=6, column=0, sticky="ew", pady=(4, 4))
-        ttk.Label(panel, text="Optional: use your own browser session for private or age-restricted videos.", style="Hint.TLabel").grid(
-            row=7, column=0, columnspan=3, sticky="w", pady=(0, 12)
-        )
+        ttk.Label(deck_tab, text="YouTube URL(s)", style="Panel.TLabel").grid(row=0, column=0, sticky="w")
+        self.url_text = tk.Text(deck_tab, height=6, wrap="word", bg="#0b0b12", fg=self.colors["green"], insertbackground=self.colors["green"], relief="flat", padx=10, pady=10, font=("Consolas", 10))
+        self.url_text.grid(row=1, column=0, columnspan=3, sticky="ew", pady=(4, 12))
+        ttk.Label(deck_tab, text="Enter one URL per line or separate with commas.", style="Hint.TLabel").grid(row=2, column=0, columnspan=3, sticky="w", pady=(0, 12))
 
-        ttk.Label(panel, text="Cookies file override", style="Panel.TLabel").grid(row=8, column=0, sticky="w")
-        ttk.Entry(panel, textvariable=self.cookies_var).grid(row=9, column=0, columnspan=2, sticky="ew", pady=(4, 12))
-        ttk.Button(panel, text="Browse", command=self.pick_cookies).grid(row=9, column=2, sticky="ew", padx=(8, 0))
+        self.start_button = ttk.Button(deck_tab, text="Start the deck", command=self.start_download, style="Accent.TButton")
+        self.start_button.grid(row=3, column=0, columnspan=2, sticky="ew")
+        self._bind_neon_hover(self.start_button, "Accent.TButton", "Accent.Hover.TButton", "Pressed.TButton")
 
-        ttk.Label(panel, text="Media", style="Panel.TLabel").grid(row=10, column=0, sticky="w")
-        media_box = ttk.Combobox(
-            panel,
-            textvariable=self.media_var,
-            values=["mp3", "mp4"],
-            state="readonly",
-            width=8,
-        )
-        media_box.grid(row=11, column=0, sticky="w", pady=(4, 12))
-        media_box.bind("<<ComboboxSelected>>", self._on_media_change)
+        open_button = ttk.Button(deck_tab, text="Open output", command=self.open_output_folder, style="TButton")
+        open_button.grid(row=3, column=2, sticky="ew", padx=(8, 0))
+        self._bind_neon_hover(open_button, "TButton", "Hover.TButton", "Pressed.TButton")
 
-        ttk.Label(panel, text="Quality", style="Panel.TLabel").grid(row=10, column=1, sticky="w", padx=(8, 0))
-        self.quality_box = ttk.Combobox(panel, textvariable=self.quality_var, width=14, state="readonly")
-        self.quality_box.grid(row=11, column=1, sticky="w", padx=(8, 0), pady=(4, 12))
-        self._refresh_quality_choices()
+        self.progress = ttk.Progressbar(deck_tab, length=200, mode="determinate", maximum=100)
+        self.progress.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(12, 10))
+        self.status_label = ttk.Label(deck_tab, textvariable=self.status_var, style="Panel.TLabel")
+        self.status_label.grid(row=5, column=0, columnspan=3, sticky="w", pady=(0, 10))
 
-        ttk.Label(panel, text="Mode", style="Panel.TLabel").grid(row=10, column=2, sticky="w")
-        mode_container = ttk.Frame(panel, style="Panel.TFrame")
-        mode_container.grid(row=11, column=2, sticky="w", pady=(4, 12))
-        ttk.Radiobutton(mode_container, text="Single", value="single", variable=self.download_mode_var).pack(side="left")
-        ttk.Radiobutton(mode_container, text="Playlist", value="playlist", variable=self.download_mode_var).pack(
-            side="left", padx=(10, 0)
-        )
+        clear_button = ttk.Button(deck_tab, text="Clear log", command=self.clear_log, style="TButton")
+        clear_button.grid(row=6, column=2, sticky="ew", padx=(8, 0), pady=(12, 0))
+        self._bind_neon_hover(clear_button, "TButton", "Hover.TButton", "Pressed.TButton")
 
-        self.progress = ttk.Progressbar(panel, length=200, mode="determinate", maximum=100)
-        self.progress.grid(row=12, column=0, columnspan=3, sticky="ew", pady=(4, 10))
-
-        self.status_label = ttk.Label(panel, textvariable=self.status_var, style="Panel.TLabel")
-        self.status_label.grid(row=13, column=0, columnspan=3, sticky="w", pady=(0, 10))
-
-        self.start_button = ttk.Button(panel, text="Start the deck", command=self.start_download, style="Accent.TButton")
-        self.start_button.grid(row=14, column=0, columnspan=2, sticky="ew")
-        ttk.Button(panel, text="Open output", command=self.open_output_folder).grid(row=14, column=2, sticky="ew", padx=(8, 0))
-
-        ttk.Button(panel, text="Clear log", command=self.clear_log).grid(row=16, column=2, sticky="ew", padx=(8, 0), pady=(12, 0))
-
-        # Logs area in an internal frame so we can attach a scrollbar without changing panel layout
-        logs_frame = ttk.Frame(panel)
-        logs_frame.grid(row=15, column=0, columnspan=3, sticky="nsew", pady=(12, 0))
+        logs_frame = ttk.Frame(deck_tab, style="NeonPanel.TFrame")
+        logs_frame.grid(row=7, column=0, columnspan=3, sticky="nsew", pady=(12, 0))
 
         self.logs = tk.Text(
             logs_frame,
             height=10,
             wrap="word",
-            bg=self.colors["green"],
-            fg=self.colors["cream"],
-            insertbackground=self.colors["cream"],
+            bg="#000000",
+            fg=self.colors["green"],
+            insertbackground=self.colors["green"],
             relief="flat",
             padx=10,
             pady=8,
@@ -243,10 +229,66 @@ class YoutubeMp3App:
         self.logs.bind_all("<Button-4>", _on_button4_5)
         self.logs.bind_all("<Button-5>", _on_button4_5)
 
+        ttk.Label(settings_tab, text="Output folder", style="Panel.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Entry(settings_tab, textvariable=self.output_var, style="TEntry").grid(row=1, column=0, columnspan=2, sticky="ew", pady=(4, 12))
+        browse_output_button = ttk.Button(settings_tab, text="Browse", command=self.pick_output, style="TButton")
+        browse_output_button.grid(row=1, column=2, sticky="ew", padx=(8, 0))
+        self._bind_neon_hover(browse_output_button, "TButton", "Hover.TButton", "Pressed.TButton")
+
+        ttk.Label(settings_tab, text="Cookie source", style="Panel.TLabel").grid(row=2, column=0, sticky="w")
+        browser_box = ttk.Combobox(
+            settings_tab,
+            textvariable=self.browser_cookie_var,
+            values=("none", "edge", "chrome", "firefox", "brave", "opera", "vivaldi"),
+            state="readonly",
+            width=14,
+        )
+        browser_box.grid(row=3, column=0, sticky="ew", pady=(4, 4))
+        ttk.Label(settings_tab, text="Optional: use your own browser session for private or age-restricted videos.", style="Hint.TLabel").grid(
+            row=4, column=0, columnspan=3, sticky="w", pady=(0, 12)
+        )
+
+        ttk.Label(settings_tab, text="Cookies file override", style="Panel.TLabel").grid(row=5, column=0, sticky="w")
+        ttk.Entry(settings_tab, textvariable=self.cookies_var, style="TEntry").grid(row=6, column=0, columnspan=2, sticky="ew", pady=(4, 12))
+        browse_cookie_button = ttk.Button(settings_tab, text="Browse", command=self.pick_cookies, style="TButton")
+        browse_cookie_button.grid(row=6, column=2, sticky="ew", padx=(8, 0))
+        self._bind_neon_hover(browse_cookie_button, "TButton", "Hover.TButton", "Pressed.TButton")
+
+        ttk.Label(settings_tab, text="Media", style="Panel.TLabel").grid(row=7, column=0, sticky="w")
+        media_box = ttk.Combobox(
+            settings_tab,
+            textvariable=self.media_var,
+            values=["mp3", "mp4"],
+            state="readonly",
+            width=8,
+        )
+        media_box.grid(row=8, column=0, sticky="w", pady=(4, 12))
+        media_box.bind("<<ComboboxSelected>>", self._on_media_change)
+
+        ttk.Label(settings_tab, text="Quality", style="Panel.TLabel").grid(row=7, column=1, sticky="w", padx=(8, 0))
+        self.quality_box = ttk.Combobox(settings_tab, textvariable=self.quality_var, width=14, state="readonly")
+        self.quality_box.grid(row=8, column=1, sticky="w", padx=(8, 0), pady=(4, 12))
+        self._refresh_quality_choices()
+
+        ttk.Label(settings_tab, text="Mode", style="Panel.TLabel").grid(row=7, column=2, sticky="w")
+        mode_container = ttk.Frame(settings_tab, style="Panel.TFrame")
+        mode_container.grid(row=8, column=2, sticky="w", pady=(4, 12))
+        ttk.Radiobutton(mode_container, text="Single", value="single", variable=self.download_mode_var).pack(side="left")
+        ttk.Radiobutton(mode_container, text="Playlist", value="playlist", variable=self.download_mode_var).pack(
+            side="left", padx=(10, 0)
+        )
+
         panel.columnconfigure(0, weight=1)
         panel.columnconfigure(1, weight=1)
         panel.columnconfigure(2, weight=0)
-        panel.rowconfigure(15, weight=1)
+        panel.rowconfigure(1, weight=1)
+        deck_tab.columnconfigure(0, weight=1)
+        deck_tab.columnconfigure(1, weight=1)
+        deck_tab.columnconfigure(2, weight=0)
+        deck_tab.rowconfigure(7, weight=1)
+        settings_tab.columnconfigure(0, weight=1)
+        settings_tab.columnconfigure(1, weight=1)
+        settings_tab.columnconfigure(2, weight=0)
         frame.columnconfigure(0, weight=1)
         frame.rowconfigure(1, weight=1)
 
@@ -275,6 +317,37 @@ class YoutubeMp3App:
                     break
                 except Exception:
                     continue
+        # If we have an image, prepare a circular cropped version for the canvas
+        if img is not None:
+            try:
+                size = (160, 160)
+                img = img.resize(size, Image.LANCZOS)
+                # create circular mask
+                mask = Image.new("L", size, 0)
+                mask_draw = Image.new("L", size, 0)
+                from PIL import ImageDraw
+
+                draw = ImageDraw.Draw(mask)
+                draw.ellipse((0, 0, size[0], size[1]), fill=255)
+                circ = Image.new("RGBA", size, (0, 0, 0, 0))
+                circ.paste(img, (0, 0), mask=mask)
+                self.logo_stage_photo = ImageTk.PhotoImage(circ)
+                # clear existing canvas items
+                try:
+                    self.logo_canvas.delete("all")
+                except Exception:
+                    pass
+                # draw pulsing ring (initial)
+                x0, y0 = 10, 10
+                x1, y1 = 170, 170
+                ring_color = self.colors.get("green", "#00FF41")
+                self._pulse_ring_id = self.logo_canvas.create_oval(x0, y0, x1, y1, outline=ring_color, width=4)
+                # place image centered
+                self.logo_canvas.create_image(90, 90, image=self.logo_stage_photo)
+                self._start_logo_pulse()
+                return
+            except Exception:
+                pass
 
         if img is None:
             return
@@ -323,6 +396,35 @@ class YoutubeMp3App:
         )
         if file_path:
             self.cookies_var.set(file_path)
+
+    def _start_logo_pulse(self) -> None:
+        try:
+            self._pulse_state = 0
+            self._pulse_step()
+        except Exception:
+            pass
+
+    def _pulse_step(self) -> None:
+        try:
+            if self._pulse_ring_id is None:
+                return
+            # cycle pulse state 0..20
+            self._pulse_state = (self._pulse_state + 1) % 40
+            # compute width and alpha-like effect via color brightness
+            import math
+
+            t = (math.sin(self._pulse_state / 40.0 * math.pi * 2) + 1) / 2  # 0..1
+            base = self.colors.get("green", "#00FF41")
+            # line width varies 2..8
+            width = 2 + int(t * 6)
+            try:
+                self.logo_canvas.itemconfigure(self._pulse_ring_id, width=width)
+            except Exception:
+                pass
+            # schedule next
+            self.logo_canvas.after(120, self._pulse_step)
+        except Exception:
+            pass
 
     def toggle_music(self) -> None:
         """Play or stop the selected ambient track. Uses ffplay when available, falls back to opening the file."""
